@@ -507,6 +507,7 @@ static const KLocalizedString* typeNames()
         kxi18nc("@item filesystem name", "ext3"),
         kxi18nc("@item filesystem name", "ext4"),
         kxi18nc("@item filesystem name", "linuxswap"),
+        kxi18nc("@item filesystem name", "freebsdswap"),
         kxi18nc("@item filesystem name", "fat16"),
         kxi18nc("@item filesystem name", "fat32"),
         kxi18nc("@item filesystem name", "ntfs"),
