@@ -35,8 +35,8 @@ freebsdswap::freebsdswap(qint64 firstsector, qint64 lastsector, qint64 sectorsus
 void freebsdswap::init()
 {
     m_Create = findExternal(QStringLiteral("swapctl")) ? cmdSupportFileSystem : cmdSupportNone;
-    m_Shrink = cmdSupportNone;
-    m_Grow = cmdSupportNone;
+    m_Shrink = cmdSupportFileSystem;
+    m_Grow = cmdSupportFileSystem;
     m_SetLabel = cmdSupportNone;
     m_UpdateUUID = cmdSupportNone;
     m_GetLabel = cmdSupportCore;
@@ -77,16 +77,6 @@ bool freebsdswap::create(Report& report, const QString& deviceNode)
     return true;
 //    ExternalCommand cmd(report, QStringLiteral("mkswap"), { deviceNode });
 //    return cmd.run(-1) && cmd.exitCode() == 0;
-}
-
-bool freebsdswap::resize(Report& report, const QString& deviceNode, qint64 length) const
-{
-    Q_UNUSED(report)
-    Q_UNUSED(deviceNode)
-    Q_UNUSED(length)
-
-    // we can't resize swap on fly, resize partition instead
-    return false;
 }
 
 QString freebsdswap::mountTitle() const

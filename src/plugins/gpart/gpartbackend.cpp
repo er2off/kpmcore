@@ -206,6 +206,8 @@ void GpartBackend::scanPartition(Device& d, const QString& partitionNode, gprovi
     }
 
     FileSystem::Type type = detectFileSystem(partitionNode);
+    // FIXME: This fallbacks to swap detection
+    if (partitionType == QStringLiteral("freebsd-swap")) type = FileSystem::Type::Unknown;
 
     PartitionTable::Flags activeFlags = PartitionTable::Flag::None;
 

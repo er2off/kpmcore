@@ -198,8 +198,8 @@ bool GpartPartitionTable::setPartitionSystemType(Report& report, const Partition
     QString partitionType = partition.type();
     if (partitionType.isEmpty())
         partitionType = getPartitionType(partition.fileSystem().type());
-    else
-        partitionType.prepend(QStringLiteral("!"));
+    //else
+    //    partitionType.prepend(QStringLiteral("!"));
     if (partitionType.isEmpty())
         return true;
 

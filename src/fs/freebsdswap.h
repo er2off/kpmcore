@@ -31,7 +31,7 @@ public:
     void init() override;
 
     bool create(Report& report, const QString& deviceNode) override;
-    bool resize(Report& report, const QString& deviceNode, qint64 length) const override;
+    //bool resize(Report& report, const QString& deviceNode, qint64 length) const override;
     //bool writeLabel(Report& report, const QString& deviceNode, const QString& newLabel) override;
     //bool copy(Report& report, const QString& targetDeviceNode, const QString& sourceDeviceNode) const override;
     //bool updateUUID(Report& report, const QString& deviceNode) const override;
