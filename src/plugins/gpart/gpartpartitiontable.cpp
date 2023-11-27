@@ -15,12 +15,9 @@
 #include "util/report.h"
 #include "util/externalcommand.h"
 
-#include <QRegularExpression>
-
 #include <KLocalizedString>
 
-// TODO: Use libgeom instead?
-#include <libgeom.h>
+// Not using libgeom here because commands are printed to user
 
 GpartPartitionTable::GpartPartitionTable(const Device *d) :
     CoreBackendPartitionTable(),
@@ -107,11 +104,7 @@ QString GpartPartitionTable::createPartition(Report& report, const Partition& pa
         partition.devicePath()
     } );
     if (createCommand.start(-1) && createCommand.exitCode() == 0) {
-        QRegularExpression re(QStringLiteral("(.+) added"));
-        QRegularExpressionMatch rem = re.match(createCommand.output());
-        if (rem.hasMatch()) {
-            return QStringLiteral("/dev/") + rem.captured(1);
-        }
+        return QStringLiteral("/dev/") + createCommand.output().split(QChar::SpecialCharacter::Space)[0];
     }
 
     report.line() << xi18nc("@info:progress", "Failed to add partition <filename>%1</filename> to device <filename>%2</filename>.", partition.deviceNode(), m_device->deviceNode());

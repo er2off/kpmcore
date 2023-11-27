@@ -34,7 +34,9 @@ freebsdswap::freebsdswap(qint64 firstsector, qint64 lastsector, qint64 sectorsus
 
 void freebsdswap::init()
 {
-    m_Shrink = m_Grow = m_Create = findExternal(QStringLiteral("swapctl")) ? cmdSupportFileSystem : cmdSupportNone;
+    m_Create = findExternal(QStringLiteral("swapctl")) ? cmdSupportFileSystem : cmdSupportNone;
+    m_Shrink = cmdSupportNone;
+    m_Grow = cmdSupportNone;
     m_SetLabel = cmdSupportNone;
     m_UpdateUUID = cmdSupportNone;
     m_GetLabel = cmdSupportCore;
@@ -53,8 +55,8 @@ bool freebsdswap::supportToolFound() const
         m_Create != cmdSupportNone &&
 //         m_Check != cmdSupportNone &&
 //         m_UpdateUUID != cmdSupportNone &&
-        m_Grow != cmdSupportNone &&
-        m_Shrink != cmdSupportNone &&
+//         m_Grow != cmdSupportNone &&
+//         m_Shrink != cmdSupportNone &&
 //         m_Copy != cmdSupportNone &&
         m_Move != cmdSupportNone; // &&
 //         m_Backup != cmdSupportNone &&
@@ -68,7 +70,7 @@ int freebsdswap::maxLabelLength() const
 
 bool freebsdswap::create(Report& report, const QString& deviceNode)
 {
-    // freebsd swap doesn't need to prepare
+    // freebsd swap doesn't need to be prepared
     Q_UNUSED(report)
     Q_UNUSED(deviceNode)
 
@@ -82,9 +84,9 @@ bool freebsdswap::resize(Report& report, const QString& deviceNode, qint64 lengt
     Q_UNUSED(report)
     Q_UNUSED(deviceNode)
     Q_UNUSED(length)
-    //ExternalCommand cmd(report, QStringLiteral("truncate"), {} );
 
-    return true; //cmd.run(-1) && cmd.exitCode() == 0;
+    // we can't resize swap on fly, resize partition instead
+    return false;
 }
 
 QString freebsdswap::mountTitle() const
@@ -124,6 +126,10 @@ qint64 freebsdswap::readUsedCapacity(const QString& deviceNode) const
     if (cmd.run(-1) && cmd.exitCode() == 0) {
         QByteArray data = cmd.rawOutput();
 
+        /* parse swapctl output
+         * Device:       1024-blocks     Used:
+         * /dev/ada0p3     2097152         0
+         */
         QTextStream in(&data);
         while (!in.atEnd()) {
             QStringList line = in.readLine().split(QRegularExpression(QStringLiteral("\\s+")));

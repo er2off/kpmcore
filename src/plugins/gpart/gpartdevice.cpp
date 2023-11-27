@@ -12,7 +12,7 @@
 #include "util/externalcommand.h"
 #include "util/report.h"
 
-#include <libgeom.h>
+//#include <libgeom.h>
 
 GpartDevice::GpartDevice(const Device& d) :
     CoreBackendDevice(d.deviceNode()),
