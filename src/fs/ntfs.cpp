@@ -40,7 +40,7 @@ FileSystem::CommandSupportType ntfs::m_SetLabel = FileSystem::cmdSupportNone;
 FileSystem::CommandSupportType ntfs::m_UpdateUUID = FileSystem::cmdSupportNone;
 FileSystem::CommandSupportType ntfs::m_GetUUID = FileSystem::cmdSupportNone;
 
-bool ntfs::mkntfs = false;
+bool ntfs::m_UseMkNTFS = false;
 
 ntfs::ntfs(qint64 firstsector, qint64 lastsector, qint64 sectorsused, const QString& label, const QVariantMap& features) :
     FileSystem(firstsector, lastsector, sectorsused, label, features, FileSystem::Type::Ntfs)
@@ -54,9 +54,9 @@ void ntfs::init()
     m_GetLabel = cmdSupportCore;
     m_SetLabel = findExternal(QStringLiteral("ntfslabel")) ? cmdSupportFileSystem : cmdSupportNone;
     // mkfs.ntfs is not always available so also try to find mkntfs
-    mkntfs = false;
+    m_UseMkNTFS = false;
     if (findExternal(QStringLiteral("mkntfs"))) {
-        mkntfs = true;
+        m_UseMkNTFS = true;
         m_Create = cmdSupportFileSystem;
     }
     else if (findExternal(QStringLiteral("mkfs.ntfs")))
@@ -153,7 +153,7 @@ bool ntfs::check(Report& report, const QString& deviceNode) const
 
 bool ntfs::create(Report& report, const QString& deviceNode)
 {
-    ExternalCommand cmd(report, mkntfs ? QStringLiteral("mkntfs") : QStringLiteral("mkfs.ntfs"), { QStringLiteral("--quick"), QStringLiteral("--verbose"), deviceNode });
+    ExternalCommand cmd(report, m_UseMkNTFS ? QStringLiteral("mkntfs") : QStringLiteral("mkfs.ntfs"), { QStringLiteral("--quick"), QStringLiteral("--verbose"), deviceNode });
     return cmd.run(-1) && cmd.exitCode() == 0;
 }
 
