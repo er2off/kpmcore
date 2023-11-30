@@ -48,6 +48,8 @@ void freebsdswap::init()
 
 bool freebsdswap::supportToolFound() const
 {
+    // UUID and labels are always unsupported by FreeBSD swap
+    // everything other should be not cmdSupportNone
     return
         m_GetUsed != cmdSupportNone &&
         m_GetLabel != cmdSupportNone &&
@@ -63,20 +65,11 @@ bool freebsdswap::supportToolFound() const
 //         m_GetUUID != cmdSupportNone;
 }
 
-int freebsdswap::maxLabelLength() const
+bool freebsdswap::create(Report&, const QString&)
 {
-    return 15;
-}
-
-bool freebsdswap::create(Report& report, const QString& deviceNode)
-{
-    // freebsd swap doesn't need to be prepared
-    Q_UNUSED(report)
-    Q_UNUSED(deviceNode)
+    // FreeBSD swap doesn't need to be prepared
 
     return true;
-//    ExternalCommand cmd(report, QStringLiteral("mkswap"), { deviceNode });
-//    return cmd.run(-1) && cmd.exitCode() == 0;
 }
 
 QString freebsdswap::mountTitle() const
@@ -89,15 +82,15 @@ QString freebsdswap::unmountTitle() const
     return xi18nc("@title:menu", "Deactivate swap");
 }
 
-bool freebsdswap::canMount(const QString& deviceNode, const QString& mountPoint) const {
-    Q_UNUSED(deviceNode)
-    // freebsd swap doesn't need mount point to activate
+bool freebsdswap::canMount(const QString&, const QString& mountPoint) const {
+    // FreeBSD swap doesn't need mount point to activate
     return mountPoint != QStringLiteral("/");
 }
 
-bool freebsdswap::mount(Report& report, const QString& deviceNode, const QString& mountPoint)
+bool freebsdswap::mount(Report& report, const QString& deviceNode, const QString&)
 {
-    Q_UNUSED(mountPoint)
+    // On FreeBSD, swapctl, swapoff and swapon are hardlinks to the same executable
+
     ExternalCommand cmd(report, QStringLiteral("swapon"), { deviceNode });
     return cmd.run(-1) && cmd.exitCode() == 0;
 }

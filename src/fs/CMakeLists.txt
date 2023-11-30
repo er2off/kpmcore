@@ -24,9 +24,9 @@ set(FS_SRC
     fs/fat12.cpp
     fs/fat16.cpp
     fs/fat32.cpp
-    fs/freebsdswap.cpp
     fs/filesystem.cpp
     fs/filesystemfactory.cpp
+    fs/freebsdswap.cpp
     fs/hfs.cpp
     fs/hfsplus.cpp
     fs/hpfs.cpp
@@ -64,9 +64,9 @@ set(FS_LIB_HDRS
     fs/fat12.h
     fs/fat16.h
     fs/fat32.h
-    fs/freebsdswap.h
     fs/filesystem.h
     fs/filesystemfactory.h
+    fs/freebsdswap.h
     fs/hfs.h
     fs/hfsplus.h
     fs/hpfs.h

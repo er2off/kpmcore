@@ -53,8 +53,16 @@ void ntfs::init()
     m_GetUsed = findExternal(QStringLiteral("ntfsinfo")) ? cmdSupportFileSystem : cmdSupportNone;
     m_GetLabel = cmdSupportCore;
     m_SetLabel = findExternal(QStringLiteral("ntfslabel")) ? cmdSupportFileSystem : cmdSupportNone;
-    mkntfs = findExternal(QStringLiteral("mkntfs"));
-    m_Create = mkntfs || findExternal(QStringLiteral("mkfs.ntfs")) ? cmdSupportFileSystem : cmdSupportNone;
+    // mkfs.ntfs is not always available so also try to find mkntfs
+    mkntfs = false;
+    if (findExternal(QStringLiteral("mkntfs"))) {
+        mkntfs = true;
+        m_Create = cmdSupportFileSystem;
+    }
+    else if (findExternal(QStringLiteral("mkfs.ntfs")))
+        m_Create = cmdSupportFileSystem;
+    else
+        m_Create = cmdSupportNone;
     m_Copy = findExternal(QStringLiteral("ntfsclone")) ? cmdSupportFileSystem : cmdSupportNone;
     m_Backup = cmdSupportCore;
     m_UpdateUUID = cmdSupportCore;

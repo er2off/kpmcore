@@ -20,10 +20,6 @@ GpartDevice::GpartDevice(const Device& d) :
 {
 }
 
-GpartDevice::~GpartDevice()
-{
-}
-
 bool GpartDevice::open()
 {
     return true;
@@ -41,9 +37,7 @@ bool GpartDevice::close()
     if (isExclusive())
         setExclusive(false);
 
-    CoreBackendPartitionTable* ptable = new GpartPartitionTable(m_device);
-    ptable->commit();
-    delete ptable;
+    openPartitionTable()->commit();
 
     return true;
 }
@@ -55,11 +49,8 @@ std::unique_ptr<CoreBackendPartitionTable> GpartDevice::openPartitionTable()
 
 bool GpartDevice::createPartitionTable(Report& report, const PartitionTable& ptable)
 {
-    QString tableType;
-    if (ptable.type() == PartitionTable::msdos || ptable.type() == PartitionTable::msdos_sectorbased)
-        tableType = QStringLiteral("mbr");
-    else
-        tableType = ptable.typeName();
+    bool isMSDOSLike = PartitionTable::msdos || PartitionTable::msdos_sectorbased;
+    QString tableType = isMSDOSLike ? QStringLiteral("mbr") : ptable.typeName();
 
     ExternalCommand destroyCommand(report, QStringLiteral("gpart"), {
         QStringLiteral("destroy"),

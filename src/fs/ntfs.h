@@ -101,6 +101,7 @@ public:
     static CommandSupportType m_GetUUID;
 
 private:
+    /// This variable is set when mkfs.ntfs is not available unlike mkntfs (maybe FreeBSD only)
     static bool mkntfs;
 };
 }

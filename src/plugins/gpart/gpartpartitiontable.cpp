@@ -35,9 +35,8 @@ bool GpartPartitionTable::open()
 }
 
 
-bool GpartPartitionTable::commit(quint32 timeout)
+bool GpartPartitionTable::commit(quint32)
 {
-    Q_UNUSED(timeout)
     // Nothing to do?
 
     return true;
@@ -73,11 +72,17 @@ static struct {
 };
 static QLatin1String getPartitionType(FileSystem::Type t)
 {
-    for (quint32 i = 0; i < sizeof(typemap) / sizeof(typemap[0]); i++)
-        if (typemap[i].type == t)
-            return typemap[i].partitionType;
+    for (const auto& elem : typemap) {
+        if (elem.type == t)
+            return elem.partitionType;
+    }
 
     return QLatin1String();
+}
+
+static inline bool isCommandSuccessful(ExternalCommand& cmd)
+{
+    return cmd.start(-1) && cmd.exitCode() == 0;
 }
 
 QString GpartPartitionTable::createPartition(Report& report, const Partition& partition)
@@ -87,11 +92,8 @@ QString GpartPartitionTable::createPartition(Report& report, const Partition& pa
         return QString();
     }
 
-    QLatin1String type;
-    if (partition.roles().has(PartitionRole::Extended))
-        type = QLatin1String("ebr");
-    else
-        type = getPartitionType(partition.fileSystem().type());
+    bool isEBR = partition.roles().has(PartitionRole::Extended);
+    QLatin1String type = isEBR ? QLatin1String("ebr") : getPartitionType(partition.fileSystem().type());
 
     ExternalCommand createCommand(report, QStringLiteral("gpart"), {
         QStringLiteral("add"),
@@ -103,13 +105,13 @@ QString GpartPartitionTable::createPartition(Report& report, const Partition& pa
         type,
         partition.devicePath()
     } );
-    if (createCommand.start(-1) && createCommand.exitCode() == 0) {
-        return QStringLiteral("/dev/") + createCommand.output().split(QChar::SpecialCharacter::Space)[0];
+    if (!isCommandSuccessful(createCommand)) {
+        report.line() << xi18nc("@info:progress", "Failed to add partition <filename>%1</filename> to device <filename>%2</filename>.", partition.deviceNode(), m_device->deviceNode());
+
+        return QString();
     }
 
-    report.line() << xi18nc("@info:progress", "Failed to add partition <filename>%1</filename> to device <filename>%2</filename>.", partition.deviceNode(), m_device->deviceNode());
-
-    return QString();
+    return QStringLiteral("/dev/") + createCommand.output().split(QChar::SpecialCharacter::Space)[0];
 }
 
 bool GpartPartitionTable::deletePartition(Report& report, const Partition& partition)
@@ -120,11 +122,13 @@ bool GpartPartitionTable::deletePartition(Report& report, const Partition& parti
         QString::number(partition.number()),
         partition.devicePath()
     } );
-    if (deleteCommand.start(-1) && deleteCommand.exitCode() == 0)
-        return true;
+    bool success = isCommandSuccessful(deleteCommand);
 
-    report.line() << xi18nc("@info:progress", "Could not delete partition <filename>%1</filename>.", partition.devicePath());
-    return false;
+    if (!success) {
+        report.line() << xi18nc("@info:progress", "Could not delete partition <filename>%1</filename>.", partition.devicePath());
+    }
+
+    return success;
 }
 
 bool GpartPartitionTable::updateGeometry(Report& report, const Partition& partition, qint64 sectorStart, qint64 sectorEnd)
@@ -155,23 +159,25 @@ bool GpartPartitionTable::updateGeometry(Report& report, const Partition& partit
         partition.devicePath()
     } );
 
-    return gpartCommand.run(-1) && gpartCommand.exitCode() == 0
-        && createCommand.run(-1) && createCommand.exitCode() == 0;
+    return isCommandSuccessful(gpartCommand) && isCommandSuccessful(createCommand);
 }
 
-bool GpartPartitionTable::clobberFileSystem(Report& report, const Partition& partition)
+bool GpartPartitionTable::clobberFileSystem(Report&, const Partition&)
 {
-    Q_UNUSED(report)
-    Q_UNUSED(partition)
-
     return true;
 }
 
 bool GpartPartitionTable::resizeFileSystem(Report& report, const Partition& partition, qint64 newLength)
 {
-    // Nobody doesn't call it?
+    // Nobody calls this function?
+
+    Q_UNUSED(report)
+    Q_UNUSED(partition)
+    Q_UNUSED(newLength)
+
     return false;
 
+    /*
     ExternalCommand gpartCommand(report, QStringLiteral("gpart"), {
         QStringLiteral("resize"),
         QStringLiteral("-i"),
@@ -180,14 +186,13 @@ bool GpartPartitionTable::resizeFileSystem(Report& report, const Partition& part
         QString::number(newLength),
         partition.devicePath()
     } );
-    return gpartCommand.run(-1) && gpartCommand.exitCode() == 0;
+    return isCommandSuccessful(gpartCommand);
+    */
 }
 
-FileSystem::Type GpartPartitionTable::detectFileSystemBySector(Report& report, const Device& device, qint64 sector)
+FileSystem::Type GpartPartitionTable::detectFileSystemBySector(Report&, const Device&, qint64)
 {
-    Q_UNUSED(report)
-    Q_UNUSED(device)
-    Q_UNUSED(sector)
+    // Return unknown as for now, this should be detected at backend?
 
     FileSystem::Type type = FileSystem::Type::Unknown;
     return type;
@@ -196,8 +201,9 @@ FileSystem::Type GpartPartitionTable::detectFileSystemBySector(Report& report, c
 bool GpartPartitionTable::setPartitionSystemType(Report& report, const Partition& partition)
 {
     QString partitionType = partition.type();
-    if (partitionType.isEmpty())
+    if (partitionType.isEmpty()) {
         partitionType = getPartitionType(partition.fileSystem().type());
+    }
     //else
     //    partitionType.prepend(QStringLiteral("!"));
     if (partitionType.isEmpty())
@@ -216,10 +222,6 @@ bool GpartPartitionTable::setPartitionSystemType(Report& report, const Partition
 
 bool GpartPartitionTable::setPartitionLabel(Report& report, const Partition& partition, const QString& label)
 {
-    Q_UNUSED(report)
-    Q_UNUSED(partition)
-    Q_UNUSED(label)
-
     if (label.isEmpty())
         return true;
     ExternalCommand gpartCommand(report, QStringLiteral("gpart"), {
@@ -233,20 +235,15 @@ bool GpartPartitionTable::setPartitionLabel(Report& report, const Partition& par
     return gpartCommand.run(-1) && gpartCommand.exitCode() == 0;
 }
 
-QString GpartPartitionTable::getPartitionUUID(Report& report, const Partition& partition)
+QString GpartPartitionTable::getPartitionUUID(Report&, const Partition&)
 {
-    Q_UNUSED(report)
-    Q_UNUSED(partition)
-
+    // This should be in backend?
     return QString();
 }
 
-bool GpartPartitionTable::setPartitionUUID(Report& report, const Partition& partition, const QString& uuid)
+bool GpartPartitionTable::setPartitionUUID(Report&, const Partition&, const QString&)
 {
-    Q_UNUSED(report)
-    Q_UNUSED(partition)
-    Q_UNUSED(uuid)
-
+    // Currently we can't do it
     return true;
 }
 

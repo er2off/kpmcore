@@ -23,7 +23,7 @@ class GpartDevice : public CoreBackendDevice
 
 public:
     explicit GpartDevice(const Device& d);
-    ~GpartDevice();
+    ~GpartDevice() = default;
 
 public:
     bool open() override;
