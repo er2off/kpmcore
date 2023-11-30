@@ -40,6 +40,8 @@ FileSystem::CommandSupportType ntfs::m_SetLabel = FileSystem::cmdSupportNone;
 FileSystem::CommandSupportType ntfs::m_UpdateUUID = FileSystem::cmdSupportNone;
 FileSystem::CommandSupportType ntfs::m_GetUUID = FileSystem::cmdSupportNone;
 
+bool ntfs::m_UseMkNTFS = false;
+
 ntfs::ntfs(qint64 firstsector, qint64 lastsector, qint64 sectorsused, const QString& label, const QVariantMap& features) :
     FileSystem(firstsector, lastsector, sectorsused, label, features, FileSystem::Type::Ntfs)
 {
@@ -51,7 +53,16 @@ void ntfs::init()
     m_GetUsed = findExternal(QStringLiteral("ntfsinfo")) ? cmdSupportFileSystem : cmdSupportNone;
     m_GetLabel = cmdSupportCore;
     m_SetLabel = findExternal(QStringLiteral("ntfslabel")) ? cmdSupportFileSystem : cmdSupportNone;
-    m_Create = findExternal(QStringLiteral("mkfs.ntfs")) ? cmdSupportFileSystem : cmdSupportNone;
+    // mkfs.ntfs is not always available so also try to find mkntfs
+    m_UseMkNTFS = false;
+    if (findExternal(QStringLiteral("mkntfs"))) {
+        m_UseMkNTFS = true;
+        m_Create = cmdSupportFileSystem;
+    }
+    else if (findExternal(QStringLiteral("mkfs.ntfs")))
+        m_Create = cmdSupportFileSystem;
+    else
+        m_Create = cmdSupportNone;
     m_Copy = findExternal(QStringLiteral("ntfsclone")) ? cmdSupportFileSystem : cmdSupportNone;
     m_Backup = cmdSupportCore;
     m_UpdateUUID = cmdSupportCore;
@@ -142,7 +153,7 @@ bool ntfs::check(Report& report, const QString& deviceNode) const
 
 bool ntfs::create(Report& report, const QString& deviceNode)
 {
-    ExternalCommand cmd(report, QStringLiteral("mkfs.ntfs"), { QStringLiteral("--quick"), QStringLiteral("--verbose"), deviceNode });
+    ExternalCommand cmd(report, m_UseMkNTFS ? QStringLiteral("mkntfs") : QStringLiteral("mkfs.ntfs"), { QStringLiteral("--quick"), QStringLiteral("--verbose"), deviceNode });
     return cmd.run(-1) && cmd.exitCode() == 0;
 }
 

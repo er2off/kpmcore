@@ -93,6 +93,7 @@ public:
         BitLocker,
         Apfs,
         Minix,
+        FreeBSDSwap,
 
         __lastType
     };
